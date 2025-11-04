@@ -1,0 +1,363 @@
+/* General page container */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;  
+  width: 100vw;
+  height: auto;
+}
+
+/* --- Top-right page menu --- */
+.top-container {
+  display: flex;
+  flex-direction: row;
+  width: 99vw;
+  height: 6vh;
+  justify-content: right;
+  align-items: center;
+}
+
+.top-right-page-menu {
+  display: flex;
+  flex-direction: row;
+  width: 48vw;
+  height: 6vh;
+  justify-content: center;
+  align-items: center;
+  gap: 1vw;
+ }
+
+.addcarbtn {
+   display: flex;
+   flex-direction: row;
+   width: 10vw;
+   height: 6vh;
+   justify-content: center;
+   align-items: center;
+}
+
+.addcar-btn, .removecar-btn, .addplaces-btn, .addvideo-btn {
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+border-radius: 0.5vw;
+background-color: blue;
+font-family: Arial, Helvetica, sans-serif;
+border: 1px solid purple;
+align-self: center;
+height: 5vh;
+width: 9vw;
+}
+
+
+.removecarbtn {
+   display: flex;
+   flex-direction: row;
+   width: 12vw;
+   height: 6vh;
+   justify-content: center;
+   align-items: center;
+   position: relative;
+}
+
+.removecar-btn {
+width: 11vw;
+}
+
+  
+.addplacesbtn {
+   display: flex;
+   flex-direction: row;
+   width: 11vw;
+   height: 6vh;
+   justify-content: center;
+   align-items: center;
+   position: relative;
+}
+
+.addplaces-btn {
+   width: 10vw;
+}
+
+.floating-overlay-textarea {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42vw;
+  height: 50vh;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.floating-input-textarea {
+  background: white;
+  padding: 0.5vw;
+  border-radius: 0.5vw;
+  width: 40vw;
+  height: 48vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1vh;
+  position: relative;
+}
+
+.textarea {
+  display: flex;
+   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 38vw;
+  height: 40vh;
+  border: 1px solid black;
+  border-radius: 0.5vw;
+}
+
+.floating-input h3 {
+  margin: 0;
+  font-size: 16px;
+  text-align: center;
+}
+
+.submitcancel-btnplaces {
+   display: flex;
+      flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  width: 38vw;
+  height: 6vh;
+  gap: 1vw;
+}   
+
+.submit-btnplaces, .cancel-btnplaces {
+   display: flex;
+   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 10vw;
+  height: 6vh;
+  align-self: flex-end;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 0.5vw;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.submit-btnplaces:hover {
+  background: #0056b3;
+}
+
+
+.addvideobtn {
+   display: flex;
+   flex-direction: row;
+   width: 10vw;
+   height: 6vh;
+   justify-content: center;
+   align-items: center;
+   position: relative;
+}
+
+.submenuremovecar, .submenuaddplaces, .submenuaddvideo {
+  display: none;       /* hide initially */
+  position: absolute;  /* overlay below main button */
+  top: 6vh;           /* just below main button */
+  left: 0;
+  background: transparent;
+  flex-direction: column;
+  z-index: 100;
+  width: 12vw;
+  height: auto;
+}
+
+
+.submenuaddplaces {
+  width: 11vw;
+}
+
+.submenuaddvideo {
+  width: 10vw;
+}
+
+.submenu-removecar, .submenu-addplaces, .submenu-addvideo {
+display: flex;
+flex-direction: row;
+justify-content: center;
+align-items: center;
+border-radius:0.5vw;
+background-color: blue;
+font-family: Arial, Helvetica, sans-serif;
+border: 1px solid purple;
+align-self: center;
+height: 5vh;
+width: 9vw;
+}
+
+.submenu-removecar {
+width: 11vw;
+}
+
+.submenu-addplaces {
+width: 10vw;
+}
+
+
+.removecarbtn:hover .submenuremovecar,
+.addplacesbtn:hover .submenuaddplaces,
+.addvideobtn:hover .submenuaddvideo {
+  display: flex;  /* show submenu when hovering parent */
+}
+
+.floating-overlay-video {
+  position: fixed;
+  top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+ width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.floating-input-video {
+  background: transparent;
+  width: 62vw;
+  height: 7vh;
+  display: flex;
+  flex-direction: row;
+    justify-content: center;
+  align-items:center;
+  gap: 1vw;
+}
+
+.choosefilediv {
+  background: white;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items:center;
+  border-radius: 0.5vw;
+  width: 47vw;
+  height: 6vh;
+  gap: 1vw;
+}
+
+.choosefilebutton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items:center;
+  background-color: blue;
+  border-radius: 0.5vw;
+  border: 1px solid purple;
+  width: 15vw;
+  height: 5vh;
+  margin-left: 0.5vw;
+}
+
+.selectedfilediv {
+   display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items:center;
+  width: 30vw;
+  height: 5vh;
+}
+
+.selectedfilenamediv, .nofilechosendiv {
+ display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items:center;
+  width: 28vw;
+  height: 5vh;
+}
+
+.submit-btnvideo, .cancel-btnvideo {
+ display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items:center;
+  background-color: blue;
+  border-radius: 0.5vw solid purple;
+  width: 7.5vw;
+  height: 6vh;
+}
+
+
+
+.bottom-container {
+  display: flex;
+  flex-direction: row;
+  width: 99vw;
+  height: auto;
+  justify-content: center;
+  align-items: center;
+}
+
+.flexible-grid {
+  display: grid;
+  grid-template-columns: repeat(2, calc(50% - 1vw));
+  grid-auto-rows: minmax(45vh, auto);
+  width: 98vw;
+  height: auto;
+  column-gap: 2vw;
+  row-gap: 2vh;
+}
+
+.grid-cell {
+  border-radius: 2vw;
+  border: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Loader */
+.loader {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+}
