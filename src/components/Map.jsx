@@ -35,24 +35,6 @@ const [selectedFileName, setSelectedFileName] = useState("");
 const [uploading, setUploading] = useState(false);
 const [, forceRender] = useState({});
 
-useEffect(() => {
-  const sse = new EventSource(`${import.meta.env.VITE_API_URL}/sse`);
-
-  sse.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (!data || !data.carId || data.type === "heartbeat") return; // ignore heartbeat
-
-    const { carId, expectedTime } = data;
-    const videoEl = document.getElementById(`video-${carId}`);
-    if (videoEl && Math.abs(videoEl.currentTime - expectedTime) > 0.1) {
-      videoEl.currentTime = expectedTime;
-    }
-  };
-
-  return () => sse.close();
-}, []);
-
-
 
 useEffect(() => {
   let intervalId;
