@@ -64,7 +64,6 @@ useEffect(() => {
           video: c.video,
         }));
         forceRender({});
-        console.log("🚗 carsLocalRef updated from backend");
       }
 
     } catch (err) {
@@ -127,7 +126,6 @@ const videoSyncedRef = useRef({});
 useEffect(() => {
   if (!isLoaded) return;
 
-  // Listen for all trips
   const unsubTrips = onSnapshot(
     collection(db, "cars_latest_position"),
     (snapshot) => {
@@ -137,23 +135,16 @@ useEffect(() => {
         const carId = docId.split("_")[0];
         const data = doc.data();
 
-        // --- Handle removed trip ---
         if (change.type === "removed") {
-          console.log(`🗑️ ${carId} trip removed`);
           posUnsubRef.current[carId]?.();
           delete posUnsubRef.current[carId];
           return;
         }
 
-        // --- Handle added or modified trip ---
         if (change.type === "added" || change.type === "modified") {
-          // Skip if already handled
           if (lastTripRef.current[carId] === docId) return;
           lastTripRef.current[carId] = docId;
 
-          console.log(`🚗 [${carId}] Detected trip ${docId}`);
-
-          // Cleanup previous listener for this car
           posUnsubRef.current[carId]?.();
           delete posUnsubRef.current[carId];
           videoSyncedRef.current[carId] = false;
@@ -161,7 +152,6 @@ useEffect(() => {
           const videoEl = document.getElementById(`video-${carId}`);
           if (!videoEl) return;
 
-          // Setup listener for latest position
           const positionsRef = collection(
             db,
             "cars_latest_position",
@@ -193,10 +183,8 @@ useEffect(() => {
 
             // Jump directly to expected time if not synced
             if (!videoSyncedRef.current[carId]) {
-              console.log("currenttime", videoEl.currentTime);
               videoEl.currentTime = expectedTime;
               videoSyncedRef.current[carId] = true;
-             console.log("expectedtime", expectedTime);
             }
 
             posUnsubRef.current[carId] = unsubscribePosition;
@@ -273,7 +261,6 @@ const handleAddCar = () => {
   tempcarsLocalRef.current.push(newCar);
   forceRender({});
 
-  console.log("New car added:", newCarId);
 };
 
 const handleRemoveCar = async (carId) => {
@@ -290,7 +277,6 @@ const handleRemoveCar = async (carId) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ carId }),
       });
-      console.log(`🚗 Car ${carId} removed from backend`);
     } catch (err) {
       console.error("removecar failed", err);
     }
@@ -325,7 +311,6 @@ const handleAddPlaces = async (carId) => {
 
     if (!res.ok) throw new Error("Add places request failed");
 
-    console.log(`Added ${places.length} places to ${carId}`);
 
     if (tempcarsLocalRef.current.some(c => c.id === carId)) {
       tempcarsLocalRef.current = tempcarsLocalRef.current.filter(c => c.id !== carId);
@@ -348,7 +333,6 @@ const openVideoOverlay = (carId) => {
   setSelectedFileName("");
 };
 
-console.log("carslocalref", carsLocalRef.current);
 
 // Choose file button: trigger hidden input
 const handleChooseFile = () => {
