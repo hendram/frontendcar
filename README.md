@@ -87,8 +87,10 @@ This updates the car’s position marker on the map and synchronizes video playb
 
 Sync logic example:
 
+```bash
 const elapsed = (newestTs - startTs) / 1000;
 videoEl.currentTime = elapsed % videoEl.duration;
+```
 
 ## 5. Video Synchronization
 
@@ -104,8 +106,9 @@ The playback time is automatically synced with real-time GPS data to ensure accu
 
 Creates a new car ID locally:
 
+```bash
 car1, car2, ...
-
+```
 
 Adds it to a temporary list until confirmed by the backend.
 
@@ -122,7 +125,7 @@ POST /removecar
 
 Removes the car from Firestore and the dashboard.
 
-📍 Add Places
+### 📍 Add Places
 
 Allows admin to define waypoints for a car using text input:
 
@@ -132,17 +135,24 @@ Allows admin to define waypoints for a car using text input:
 Backend route:
 
 POST /addplaces
+```bash
 {
   "carId": "car1",
   "places": ["Jakarta", "Bogor", "Bandung"]
 }
+```
 
-🎥 Add Video
+### 🎥 Add Video
 
 Admins can upload a .m4v file for each car:
 
 POST /video/upload
-FormData: { carId, video }
 
+```bash
+FormData: { carId, video }
+```
 
 After upload, the video will appear alongside the map view in the grid.
+
+
+![Workflow Diagram](FrontendDiagram.png)
