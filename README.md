@@ -1,4 +1,4 @@
-#🗺️ MapWithAdmin — Real-Time Car Fleet Dashboard
+# 🗺️ MapWithAdmin — Real-Time Car Fleet Dashboard
 
 MapWithAdmin is a React component that provides an admin interface to manage and monitor a fleet of simulated or real vehicles.
 It integrates with Firebase (Firestore + Auth), Google Maps, and a custom backend API for car data, routes, and video uploads.
@@ -16,7 +16,7 @@ Uploading video files for each car
 Synchronized video playback with GPS positions
 
 
-##⚙️ Main Technologies
+## ⚙️ Main Technologies
 Technology	Purpose
 React + Vite	Frontend framework and build tool
 Firebase Firestore	Real-time data for car positions
@@ -27,7 +27,7 @@ CSS Grid + Overlays	Responsive admin UI
 
 # 🚗 Functional Overview
 
-##1. Google Maps Setup
+## 1. Google Maps Setup
 
 The component uses @react-google-maps/api to load and render a map:
 
