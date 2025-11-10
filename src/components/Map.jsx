@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import "./Map.css";
-import { db } from "../firebaseConfig";
+import { db, auth } from "../firebaseConfig";
 import { collection, getDocs, where, query, orderBy, documentId, limit, onSnapshot } from "firebase/firestore";
 import carIcon from "../assets/car.png";
 const API_URL = import.meta.env.VITE_API_URL;
@@ -11,11 +11,35 @@ const containerStyle = { width: "100%", height: "100%" };
 const center = { lat: -6.2, lng: 106.816666 };
 const MAP_ID = "2b8757efac2172e4321a3e69";
 
+import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
+
+
+
 export default function MapWithAdmin() {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   });
+
+useEffect(() => {
+  const doAnonLogin = async () => {
+    try {
+      const userCredential = await signInAnonymously(auth);
+      console.log("Anonymous user ID:", userCredential.user.uid);
+    } catch (error) {
+      console.error("Error with anonymous login:", error);
+    }
+  };
+
+  const unsub = onAuthStateChanged(auth, (user) => {
+    if (user?.isAnonymous) {
+      console.log("User is browsing anonymously.");
+    }
+  });
+
+  doAnonLogin();
+  return () => unsub();
+}, []);
 
 const carsLocalRef = useRef([]);      // internal session datastore
 const tempcarsLocalRef = useRef([]);
@@ -34,6 +58,8 @@ const [selectedFile, setSelectedFile] = useState(null);
 const [selectedFileName, setSelectedFileName] = useState("");
 const [uploading, setUploading] = useState(false);
 const [, forceRender] = useState({});
+
+
 
 
 useEffect(() => {
