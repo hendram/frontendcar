@@ -4,6 +4,10 @@ import "./Map.css";
 import { db, auth } from "../firebaseConfig";
 import { collection, getDocs, where, query, orderBy, documentId, limit, onSnapshot } from "firebase/firestore";
 import carIcon from "../assets/car.png";
+import GoogleMapUpdate from "./GoogleMapUpdate";
+import VideoComp from "./VideoComp";
+
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 const libraries = ["geometry", "marker"];
@@ -13,13 +17,33 @@ const MAP_ID = "2b8757efac2172e4321a3e69";
 
 import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
-
-
 export default function MapWithAdmin() {
+const [showAddCarDialog, setShowAddCarDialog] = useState(false);
+const [carIdInput, setCarIdInput] = useState("");
+const [carIdError, setCarIdError] = useState("");
+
+
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   });
+
+const refreshCars = async () => {
+  try {
+    const res = await fetch(`${API_URL}/listcars`);
+    const data = await res.json();
+    carsLocalRef.current = data.map(c => ({
+      id: c.id,
+      places: c.places,
+      video: c.video,
+    }));
+    forceRender({});
+    console.log("carsLocalRef refreshed", carsLocalRef.current);
+  } catch (err) {
+    console.error("Error fetching cars:", err);
+  }
+};
+
 
 useEffect(() => {
   const doAnonLogin = async () => {
@@ -36,7 +60,7 @@ useEffect(() => {
       console.log("User is browsing anonymously.");
     }
   });
-
+   refreshCars();
   doAnonLogin();
   return () => unsub();
 }, []);
@@ -45,7 +69,6 @@ const carsLocalRef = useRef([]);      // internal session datastore
 const tempcarsLocalRef = useRef([]);
 
   const mapRef = useRef(null);
-  const carsRef = useRef({}); // markers
   const unsubRef = useRef([]);
 
 const [activeCarForPlaces, setActiveCarForPlaces] = useState(null);
@@ -60,240 +83,42 @@ const [uploading, setUploading] = useState(false);
 const [, forceRender] = useState({});
 
 
+const submitAddCar = async () => {
+  const carId = carIdInput.trim();
+  if (!carId) {
+    setCarIdError("Car ID cannot be empty");
+    return;
+  }
 
-
-useEffect(() => {
-  let intervalId;
-
-  const fetchCars = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/listcars`);
-      const data = await res.json();
-
-      // sort both lists by ID to make sure order doesn’t matter
-      const sortedLocal = [...(carsLocalRef.current || [])].sort((a, b) => a.id.localeCompare(b.id));
-      const sortedNew = [...data].sort((a, b) => a.id.localeCompare(b.id));
-
-      // simple deep comparison
-      const isSame =
-        sortedLocal.length === sortedNew.length &&
-        sortedLocal.every((oldCar, i) =>
-          oldCar.id === sortedNew[i].id &&
-          oldCar.video === sortedNew[i].video &&
-          JSON.stringify([...oldCar.places].sort()) === JSON.stringify([...sortedNew[i].places].sort())
-        );
-    
-      if (!isSame) {
-        carsLocalRef.current = sortedNew.map(c => ({
-          id: c.id,
-          places: c.places,
-          video: c.video,
-        }));
-        forceRender({});
-      }
-
-    } catch (err) {
-      console.error("Error fetching cars:", err);
-    }
-  };
-
-  fetchCars();
-  intervalId = setInterval(fetchCars, 5000);
-
-  return () => clearInterval(intervalId);
-}, []);
-
-
-function VideoPlayer({ carId, src }) {
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
-
-    const handleLoadedMetadata = () => {
-      videoEl.currentDuration = videoEl.duration;
-    };
-
-    videoEl.addEventListener("loadedmetadata", handleLoadedMetadata);
-
-    return () => {
-      videoEl.removeEventListener("loadedmetadata", handleLoadedMetadata);
-    };
-  }, []);
-
-  return (
-    <div className="video-wrapper">
-      <video
-        ref={videoRef}
-        id={`video-${carId}`}
-        src={src}
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="video-element"
-        onPlay={() => {
-          // mark as actively playing once successfully started
-          videoRef.current.dataset.playing = "true";
-        }}
-      />
-      <div className="video-overlay">
-        <span>{carId}</span>
-      </div>
-    </div>
-  );
-}
-
-const lastTripRef = useRef({});     // <-- new
-const posUnsubRef = useRef({});     // <-- new
-const videoSyncedRef = useRef({});
-
-useEffect(() => {
-  if (!isLoaded) return;
-
-  const unsubTrips = onSnapshot(
-    collection(db, "cars_latest_position"),
-    (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        const doc = change.doc;
-        const docId = doc.id; // full trip doc ID, e.g., "car1_20251104120000"
-        const carId = docId.split("_")[0];
-        const data = doc.data();
-
-        if (change.type === "removed") {
-          posUnsubRef.current[carId]?.();
-          delete posUnsubRef.current[carId];
-          return;
-        }
-
-        if (change.type === "added" || change.type === "modified") {
-          if (lastTripRef.current[carId] === docId) return;
-          lastTripRef.current[carId] = docId;
-
-          posUnsubRef.current[carId]?.();
-          delete posUnsubRef.current[carId];
-          videoSyncedRef.current[carId] = false;
-
-          const videoEl = document.getElementById(`video-${carId}`);
-          if (!videoEl) return;
-
-          const positionsRef = collection(
-            db,
-            "cars_latest_position",
-            docId,
-            "positions"
-          );
-          const posQuery = query(
-            positionsRef,
-            orderBy("timestamp", "desc"),
-            limit(1)
-          );
-
-          const unsubscribePosition = onSnapshot(posQuery, (posSnap) => {
-            if (posSnap.empty) return;
-
-            const posData = posSnap.docs[0].data();
-            if (!posData?.lat || !posData?.lng) return;
-
-            updateCarMarker(carId, { lat: posData.lat, lng: posData.lng });
-
-            const newestTs = new Date(posData.timestamp).getTime();
-            const startTs = new Date(data.timestamp).getTime();
-
-            if (!startTs || isNaN(startTs) || isNaN(newestTs)) return;
-
-            // Calculate expected video time based on Firestore timestamps
-            const elapsed = (newestTs - startTs) / 1000; // seconds
-            const expectedTime = elapsed % videoEl.duration;
-
-            // Jump directly to expected time if not synced
-            if (!videoSyncedRef.current[carId]) {
-              videoEl.currentTime = expectedTime;
-              videoSyncedRef.current[carId] = true;
-            }
-
-            posUnsubRef.current[carId] = unsubscribePosition;
-          });
-        }
-      });
-    }
-  );
-
-  // Cleanup all listeners on unmount
-  return () => {
-    unsubTrips();
-    Object.values(posUnsubRef.current).forEach((fn) => fn?.());
-    posUnsubRef.current = {};
-  };
-}, [isLoaded]);
-
-
-  const updateCarMarker = (carId, position) => {
-    if (!window.google || !mapRef.current) return;
-
-    const existing = carsRef.current[carId];
-    if (!existing) {
-      const carEl = document.createElement("img");
-      carEl.src = carIcon;
-      carEl.style.width = "40px";
-      carEl.style.transformOrigin = "50% 50%";
-
-      const marker = new window.google.maps.marker.AdvancedMarkerElement({
-        position,
-        content: carEl,
-        map: mapRef.current,
-      });
-
-      carsRef.current[carId] = { marker, carEl, lastPosition: position };
-    } else {
-      const { marker, carEl, lastPosition } = existing;
-      const start = new window.google.maps.LatLng(lastPosition.lat, lastPosition.lng);
-      const end = new window.google.maps.LatLng(position.lat, position.lng);
-      const heading = window.google.maps.geometry.spherical.computeHeading(start, end) + 90;
-
-      carEl.style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
-      marker.position = position;
-      carsRef.current[carId].lastPosition = position;
-    }
-  };
-
-
-const handleAddCar = () => {
-  // Determine next car ID based on local datastore
-  const allIds = [
-    ...carsLocalRef.current.map(c => c.id),
-    ...tempcarsLocalRef.current.map(c => c.id)
-  ];
-
-  // Extract numeric parts of IDs
-  const nums = allIds
-    .map(id => parseInt(id.replace(/^car/, ""), 10))
-    .filter(n => !isNaN(n));
-
-  // Find next available number
-  const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
-  const newCarId = `car${nextNum}`;
-
-
-  // Create new car object
-  const newCar = {
-    id: newCarId,
-    places: [],
-    video: null
-  };
-
-  // Update local datastore
-  tempcarsLocalRef.current.push(newCar);
+  setShowAddCarDialog(false);
+  setCarIdInput("");
+  setCarIdError("");
   forceRender({});
 
+  try {
+    const res = await fetch(`${API_URL}/registercar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ carId }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      console.error("registercar rejected:", data.error);
+      // ❌ do NOT revert UI here — polling will reconcile
+    }
+
+  } catch (err) {
+    console.error("registercar failed", err);
+  }
+    finally {
+    refreshCars(); // ✅ immediately update submenu
+  }
 };
+
 
 const handleRemoveCar = async (carId) => {
   const carExists = carsLocalRef.current.some(c => c.id === carId);
-
-  // Remove car from local datastore
-  tempcarsLocalRef.current = tempcarsLocalRef.current.filter(c => c.id !== carId);
 
   // Inform backend only if car existed
   if (carExists) {
@@ -306,10 +131,28 @@ const handleRemoveCar = async (carId) => {
     } catch (err) {
       console.error("removecar failed", err);
     }
+     finally {
+    refreshCars(); // ✅ immediately update submenu
+  }
   }
   forceRender({});
 
 };
+
+const generateNextCarId = () => {
+  const allIds = [
+    ...carsLocalRef.current.map(c => c.id),
+    ...tempcarsLocalRef.current.map(c => c.id),
+  ];
+
+  const nums = allIds
+    .map(id => parseInt(id.replace(/^car/, ""), 10))
+    .filter(n => !isNaN(n));
+
+  const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
+  return `car${nextNum}`;
+};
+
 
 const handleAddPlaces = async (carId) => {
   const trimmed = waypointInput.trim();
@@ -338,16 +181,13 @@ const handleAddPlaces = async (carId) => {
     if (!res.ok) throw new Error("Add places request failed");
 
 
-    if (tempcarsLocalRef.current.some(c => c.id === carId)) {
-      tempcarsLocalRef.current = tempcarsLocalRef.current.filter(c => c.id !== carId);
-    }
-
   } catch (err) {
     console.error("Add places failed:", err);
     alert("Failed to add places. Check console.");
   } finally {
     setWaypointInput("");
     setActiveCarForPlaces(null);
+      refreshCars(); // 
     forceRender({});
   }
 };
@@ -396,12 +236,7 @@ const handleSubmitUpload = async () => {
     setUploadingCarId(null);
     setSelectedFile(null);
     setSelectedFileName("");
-     if (tempcarsLocalRef.current.some(c => c.id === uploadingCarId)) {
-      tempcarsLocalRef.current = tempcarsLocalRef.current.filter(
-        c => c.id !== uploadingCarId
-      );
-    }
-
+  
   } catch (err) {
     console.error("Upload error:", err);
     alert("Upload failed. See console for details.");
@@ -409,7 +244,8 @@ const handleSubmitUpload = async () => {
     setUploading(false);
     // reset input so same file can be selected again later
     if (fileInputRef.current) fileInputRef.current.value = "";
-    forceRender({});
+   refreshCars();    
+forceRender({});
   }
 };
 
@@ -424,7 +260,12 @@ const closeVideoOverlay = () => {
 
   if (!isLoaded) return <div className="loader">Loading map...</div>;
 
-  const videoCars = carsLocalRef.current.filter((c) => c.video !== null);
+const mergedCars = [ ...carsLocalRef.current];
+
+const videoCars = mergedCars.filter(
+  c => c.video && c.video.length
+);
+
   const gridItems = [
     { type: "map" },
     ...videoCars.map((c) => ({ type: "video", carId: c.id, video: c.video })),
@@ -437,16 +278,21 @@ const closeVideoOverlay = () => {
       <div className="top-right-page-menu">
 
         <div className="addcarbtn">
-  <button className="addcar-btn" onClick={handleAddCar}>Add Car</button>
+<button
+  className="addcar-btn"
+  onClick={() => {    setCarIdInput("");
+    setCarIdError("");
+    setShowAddCarDialog(true);
+  }}
+>
+  Add Car
+</button>
 </div>
 
 <div className="removecarbtn">
   <button className="removecar-btn">Remove Car</button>
   <div className="submenuremovecar">
-    {[
-      ...carsLocalRef.current,
-      ...(tempcarsLocalRef.current.length ? tempcarsLocalRef.current : [])
-    ].map(c => (
+     {mergedCars.map(c => (
       <button
         className="submenu-removecar"
         key={c.id}
@@ -461,11 +307,8 @@ const closeVideoOverlay = () => {
 <div className="addplacesbtn">
   <button className="addplaces-btn">Add Places</button>
   <div className="submenuaddplaces">
-    {[
-      ...carsLocalRef.current,
-      ...(tempcarsLocalRef.current.length ? tempcarsLocalRef.current : [])
-    ]
-      .filter(c => !c.places || c.places.length === 0)
+   { mergedCars
+    .filter(c => !c.places || c.places.length === 0)
       .map(c => (
         <button
           className="submenu-addplaces"
@@ -512,11 +355,8 @@ const closeVideoOverlay = () => {
 <div className="addvideobtn">
   <button className="addvideo-btn">Add Video</button>
   <div className="submenuaddvideo">
-    {[
-      ...carsLocalRef.current,
-      ...(tempcarsLocalRef.current.length ? tempcarsLocalRef.current : [])
-    ]
-      .filter(c => !c.video) // show only cars with no video
+  { mergedCars
+     .filter(c => !c.video || (Array.isArray(c.video) && c.video.length === 0)) // show only cars with no video
       .map(c => (
         <button
           className="submenu-addvideo"
@@ -579,24 +419,79 @@ const closeVideoOverlay = () => {
     
   {/* Bottom Section (map and videos) */}
     <div className="bottom-container">
-  <div className="flexible-grid">
-    {gridItems.map((item, idx) => (
-      <div key={item.carId} className="grid-cell">
-        {item.type === "map" ? (
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={center}
-            zoom={13}
-            options={{ mapId: MAP_ID }}
-            onLoad={(map) => (mapRef.current = map)}
-          />
-        ) : (
-          <VideoPlayer carId={item.carId} src={`${API_URL}/stream/${item.video}`} />
-        )}
-      </div>
-    ))}
+ <div className="flexible-grid">
+  {gridItems.map((item) => (
+    <div
+      key={item.type === "map" ? "MAP_STATIC" : `VIDEO_${item.carId}`}
+      className="grid-cell"
+    >
+      {item.type === "map" ? (
+        <GoogleMapUpdate isLoaded={isLoaded} />
+      ) : (
+        <VideoComp
+          carId={item.carId}
+          src={item.video[0].filename}
+        />
+      )}
+    </div>
+  ))}
+</div>
+
+   </div>
+
+{showAddCarDialog && (
+  <div className="floating-overlay-video" onClick={() => setShowAddCarDialog(false)}>
+    <div
+      className="floating-input-video"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3>Add Car</h3>
+
+      <input
+        type="text"
+        className="carid-input"
+        placeholder="Enter car ID (e.g. car12, taxiA)"
+        value={carIdInput}
+        onChange={(e) => {
+          setCarIdInput(e.target.value);
+          setCarIdError("");
+        }}
+      />
+
+      {carIdError && (
+        <div className="error-text">{carIdError}</div>
+      )}
+
+      <div className="dialog-buttons">
+        <button
+          className="generate-btn"
+          onClick={() => {
+            setCarIdInput(generateNextCarId());
+            setCarIdError("");
+          }}
+        >
+          Generate
+        </button>
+
+        <button
+          className="submit-btnvideo"
+          onClick={submitAddCar}
+        >
+          Submit
+        </button>
+
+        <button
+          className="cancel-btnvideo"
+          onClick={() => setShowAddCarDialog(false)}
+        >
+          Cancel
+        </button>
       </div>
     </div>
+  </div>
+)}
+
    </div>
   );
 }
+
