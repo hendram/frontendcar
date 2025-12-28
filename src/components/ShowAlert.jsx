@@ -1,7 +1,6 @@
-// src/components/SimpleAlert.js
 import React, { useState } from "react";
 import ReactDOM from "react-dom";
-import "./SimpleAlert.css";
+import "./ShowAlert.css";
 
 let alertContainer = null;
 

@@ -134,6 +134,79 @@ width: 11vw;
   text-align: center;
 }
 
+
+.floating-overlay-addcar {
+  position: fixed;
+  top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+ width: 100%;
+  height: 10%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.floating-input-addcar {
+  background: transparent;
+  width: 62vw;
+  height: 7vh;
+  display: flex;
+  flex-direction: row;
+    justify-content: center;
+  align-items:center;
+  gap: 1vw;
+}
+
+.carid-input {
+  display: flex;
+   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 20vw;
+  height: 5vh;
+  border: 1px solid black;
+  border-radius: 0.5vw;
+}
+
+.submitgeneratecancel-btnadd {
+   display: flex;
+      flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  width: 38vw;
+  height: 6vh;
+  gap: 1vw;
+}   
+
+.submit-btnadd, .generate-btnadd, .cancel-btnadd {
+   display: flex;
+   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 10vw;
+  height: 6vh;
+  align-self: flex-end;
+  background-color: #E0F7FA;
+  color: #003366;
+  border: none;
+  border-radius: 0.5vw;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: 'Segoe UI', sans-serif;
+  transition: background 0.2s;
+  font-size: 1.2vw;
+}
+
+
+.submit-btnadd:hover,
+.generate-btnadd:hover,
+.cancel-btnadd:hover {
+  background-color: #58D4E4;
+}
+
 .submitcancel-btnplaces {
    display: flex;
       flex-direction: row;

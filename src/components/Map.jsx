@@ -6,7 +6,7 @@ import { collection, getDocs, where, query, orderBy, documentId, limit, onSnapsh
 import carIcon from "../assets/car.png";
 import GoogleMapUpdate from "./GoogleMapUpdate";
 import VideoComp from "./VideoComp";
-
+import { showAlert } from "./ShowAlert";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -43,6 +43,12 @@ const refreshCars = async () => {
     console.error("Error fetching cars:", err);
   }
 };
+
+useEffect(() => {
+  if (carIdError) {
+    showAlert(carIdError);
+  }
+}, [carIdError]);
 
 
 useEffect(() => {
@@ -167,7 +173,7 @@ const handleAddPlaces = async (carId) => {
   }
 
   if (places.length === 0) {
-    alert('Please wrap each place name in double quotes.');
+    showAlert('Please wrap each place name in double quotes.');
     return;
   }
 
@@ -183,7 +189,7 @@ const handleAddPlaces = async (carId) => {
 
   } catch (err) {
     console.error("Add places failed:", err);
-    alert("Failed to add places. Check console.");
+    showAlert("Failed to add places. Check console.");
   } finally {
     setWaypointInput("");
     setActiveCarForPlaces(null);
@@ -215,7 +221,7 @@ const handleFileChange = (e) => {
 
 // Submit (upload) handler — sends file + carId to backend
 const handleSubmitUpload = async () => {
-  if (!selectedFile || !uploadingCarId) return alert("Please choose a file first");
+  if (!selectedFile || !uploadingCarId) return showAlert("Please choose a file first");
 
   const formData = new FormData();
   formData.append("carId", uploadingCarId);
@@ -239,7 +245,7 @@ const handleSubmitUpload = async () => {
   
   } catch (err) {
     console.error("Upload error:", err);
-    alert("Upload failed. See console for details.");
+    showAlert("Upload failed. See console for details.");
   } finally {
     setUploading(false);
     // reset input so same file can be selected again later
@@ -440,13 +446,11 @@ const videoCars = mergedCars.filter(
    </div>
 
 {showAddCarDialog && (
-  <div className="floating-overlay-video" onClick={() => setShowAddCarDialog(false)}>
+  <div className="floating-overlay-addcar" onClick={() => setShowAddCarDialog(false)}>
     <div
-      className="floating-input-video"
+      className="floating-input-addcar"
       onClick={(e) => e.stopPropagation()}
     >
-      <h3>Add Car</h3>
-
       <input
         type="text"
         className="carid-input"
@@ -458,13 +462,9 @@ const videoCars = mergedCars.filter(
         }}
       />
 
-      {carIdError && (
-        <div className="error-text">{carIdError}</div>
-      )}
-
-      <div className="dialog-buttons">
+      <div className="submitgeneratecancel-btnadd">
         <button
-          className="generate-btn"
+          className="generate-btnadd"
           onClick={() => {
             setCarIdInput(generateNextCarId());
             setCarIdError("");
@@ -474,14 +474,14 @@ const videoCars = mergedCars.filter(
         </button>
 
         <button
-          className="submit-btnvideo"
+          className="submit-btnadd"
           onClick={submitAddCar}
         >
           Submit
         </button>
 
         <button
-          className="cancel-btnvideo"
+          className="cancel-btnadd"
           onClick={() => setShowAddCarDialog(false)}
         >
           Cancel

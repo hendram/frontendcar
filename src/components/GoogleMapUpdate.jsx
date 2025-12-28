@@ -18,81 +18,72 @@ function GoogleMapUpdate({ isLoaded }) {
   const mapRef = useRef(null);
 
   const carsRef = useRef({});
-  const lastTripRef = useRef({});
+  const activeTripRef = useRef({});
   const posUnsubRef = useRef({});
 
-  // 🔥 LOCAL force update (MAP ONLY)
   const [, forceUpdate] = useState(0);
-  const bump = () => forceUpdate((n) => n + 1);
+  const bump = () => forceUpdate(n => n + 1);
 
   useEffect(() => {
     if (!isLoaded) return;
 
     const unsubTrips = onSnapshot(
       collection(db, "cars_latest_position"),
-      (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
+      snapshot => {
+        snapshot.docChanges().forEach(change => {
           const doc = change.doc;
           const docId = doc.id;
-          const carId = docId.split("_")[0];
-          const data = doc.data();
 
-          // ❌ REMOVED CAR
+          // 🔴 STABLE carId (DO NOT PARSE RANDOMLY)
+          const carId = docId.split("_")[0];
+
+          // ❌ CAR REMOVED
           if (change.type === "removed") {
-            posUnsubRef.current[carId]?.();
-            delete posUnsubRef.current[carId];
+            posUnsubRef.current[docId]?.();
+            delete posUnsubRef.current[docId];
 
             const existing = carsRef.current[carId];
             if (existing) {
               existing.marker.map = null;
               delete carsRef.current[carId];
-              bump(); // 🔥 update map component only
+              bump();
             }
             return;
           }
 
-          // ✅ NEW / MODIFIED TRIP
-          if (change.type === "added" || change.type === "modified") {
-            if (lastTripRef.current[carId] === docId) return;
-            lastTripRef.current[carId] = docId;
-
-            posUnsubRef.current[carId]?.();
-            delete posUnsubRef.current[carId];
-
-            const positionsRef = collection(
-              db,
-              "cars_latest_position",
-              docId,
-              "positions"
-            );
-
-            const posQuery = query(
-              positionsRef,
-              orderBy("timestamp", "desc"),
-              limit(1)
-            );
-
-            const unsubPos = onSnapshot(posQuery, (snap) => {
-              if (snap.empty) return;
-
-              const pos = snap.docs[0].data();
-              if (!pos?.lat || !pos?.lng) return;
-
-              updateCarMarker(carId, {
-                lat: pos.lat,
-                lng: pos.lng
-              });
-            });
-
-            posUnsubRef.current[carId] = unsubPos;
+          // ✅ ONLY ACCEPT NEW TRIP FOR SAME CAR
+          if (
+            (change.type === "added" || change.type === "modified") &&
+            activeTripRef.current[carId] === docId
+          ) {
+            return;
           }
+
+          // 🔁 SWITCH ACTIVE TRIP FOR THIS CAR
+          activeTripRef.current[carId] = docId;
+
+          // 🔥 STOP OLD POSITION LISTENER FOR SAME CAR
+          posUnsubRef.current[carId]?.();
+
+          const posQuery = query(
+            collection(db, "cars_latest_position", docId, "positions"),
+            orderBy("timestamp", "desc"),
+            limit(1)
+          );
+
+          posUnsubRef.current[carId] = onSnapshot(posQuery, snap => {
+            if (snap.empty) return;
+            const { lat, lng } = snap.docs[0].data();
+            if (!lat || !lng) return;
+            updateCarMarker(carId, { lat, lng });
+          });
         });
       }
     );
 
     return () => {
       unsubTrips();
-      Object.values(posUnsubRef.current).forEach((fn) => fn?.());
+      Object.values(posUnsubRef.current).forEach(fn => fn?.());
       posUnsubRef.current = {};
     };
   }, [isLoaded]);
@@ -102,7 +93,6 @@ function GoogleMapUpdate({ isLoaded }) {
 
     const existing = carsRef.current[carId];
 
-    // 🆕 CREATE MARKER
     if (!existing) {
       const carEl = document.createElement("img");
       carEl.src = carIcon;
@@ -122,11 +112,10 @@ function GoogleMapUpdate({ isLoaded }) {
         lastPosition: position
       };
 
-      bump(); // 🔥 force update map only
+      bump();
       return;
     }
 
-    // 🔁 MOVE MARKER (NO React update)
     const { marker, carEl, lastPosition } = existing;
 
     const start = new window.google.maps.LatLng(
@@ -139,10 +128,7 @@ function GoogleMapUpdate({ isLoaded }) {
     );
 
     const heading =
-      window.google.maps.geometry.spherical.computeHeading(
-        start,
-        end
-      ) + 90;
+      window.google.maps.geometry.spherical.computeHeading(start, end) + 90;
 
     carEl.style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
     marker.position = position;
@@ -155,7 +141,7 @@ function GoogleMapUpdate({ isLoaded }) {
       center={center}
       zoom={13}
       options={{ mapId: MAP_ID }}
-      onLoad={(map) => (mapRef.current = map)}
+      onLoad={map => (mapRef.current = map)}
     />
   );
 }
