@@ -223,4 +223,15 @@ Jakarta Selatan, Daerah Khusus Ibukota Jakarta 12310, Indonesia",
 "Pasar Rebo Regional General Hospital Jl. TB Simatupang No.30 RT.9/RW.2, Gedong Pasar Rebo East
 Jakarta City, Jakarta 13760, Indonesia"
 
+### Dockerfile
+
+FROM ghcr.io/hendram/frontendcar:latest
+
+WORKDIR /home/frontendcar
+
+ENV PORT=9001
+
+EXPOSE 9001
+
+CMD ["/bin/bash", "-c", "npm install && npm run dev"]
 
